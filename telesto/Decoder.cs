@@ -6,11 +6,13 @@ public struct Decoder
 {
     private readonly Stream _stream;
     private byte _nextCode;
+    private int _spanSize;
 
     public Decoder(Stream stream)
     {
         _stream = stream;
         _nextCode = 0x00;
+        _spanSize = 0;
     }
 
     /// <summary>
@@ -20,6 +22,19 @@ public struct Decoder
     public void Read()
     {
         _nextCode = (byte)_stream.ReadByte();
+        _spanSize = _nextCode switch
+        {
+            <= (byte)Bytecodes.PackedUIntEnd => 0,
+            (byte)Bytecodes.Int1Byte => 1,
+            (byte)Bytecodes.Int2Byte => 2,
+            (byte)Bytecodes.Int4Byte => 4,
+            (byte)Bytecodes.Int8Byte => 8,
+            (byte)Bytecodes.UInt1Byte => 1,
+            (byte)Bytecodes.UInt2Byte => 2,
+            (byte)Bytecodes.UInt4Byte => 4,
+            (byte)Bytecodes.UInt8Byte => 8,
+            _ => _spanSize
+        };
     }
 
     public TokenTypes GetTokenType()

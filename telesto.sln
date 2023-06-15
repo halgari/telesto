@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "telesto", "telesto\telesto.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "telesto.Tests", "telesto.Tests\telesto.Tests.csproj", "{EDFFD794-0981-4443-891D-0139F6DA92A9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "telesto.Benchmarks", "telesto.Benchmarks\telesto.Benchmarks.csproj", "{29370CF2-F8C1-4346-82AC-9B0573437BA1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{EDFFD794-0981-4443-891D-0139F6DA92A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EDFFD794-0981-4443-891D-0139F6DA92A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EDFFD794-0981-4443-891D-0139F6DA92A9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{29370CF2-F8C1-4346-82AC-9B0573437BA1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{29370CF2-F8C1-4346-82AC-9B0573437BA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{29370CF2-F8C1-4346-82AC-9B0573437BA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{29370CF2-F8C1-4346-82AC-9B0573437BA1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
