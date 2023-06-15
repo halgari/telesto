@@ -95,4 +95,29 @@ public struct Decoder
                 return DecoderException.Throw<ushort>(_nextCode);
         }
     }
+
+    public uint ReadUInt()
+    {
+        switch (_nextCode)
+        {
+            case >= (byte)Bytecodes.PackedUIntStart and <= (byte)Bytecodes.PackedUIntEnd:
+                return (uint)(_nextCode - (byte)Bytecodes.PackedUIntStart);
+            case (byte)Bytecodes.UInt1Byte:
+                return (uint)_stream.ReadByte();
+            case (byte)Bytecodes.UInt2Byte:
+            {
+                Span<byte> buf = stackalloc byte[2];
+                _stream.Read(buf);
+                return BinaryPrimitives.ReadUInt16LittleEndian(buf);
+            }
+            case (byte)Bytecodes.UInt4Byte:
+            {
+                Span<byte> buf = stackalloc byte[4];
+                _stream.Read(buf);
+                return BinaryPrimitives.ReadUInt32LittleEndian(buf);
+            }
+            default:
+                return DecoderException.Throw<uint>(_nextCode);
+        }
+    }
 }
