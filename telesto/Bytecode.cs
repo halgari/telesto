@@ -1,6 +1,6 @@
 ﻿namespace telesto;
 
-public enum Bytecodes : byte
+public enum Bytecode : byte
 {
     Null = 0x00,
     True = 0x01,

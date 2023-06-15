@@ -24,15 +24,15 @@ public struct Decoder
         _nextCode = (byte)_stream.ReadByte();
         _spanSize = _nextCode switch
         {
-            <= (byte)Bytecodes.PackedUIntEnd => 0,
-            (byte)Bytecodes.Int1Byte => 1,
-            (byte)Bytecodes.Int2Byte => 2,
-            (byte)Bytecodes.Int4Byte => 4,
-            (byte)Bytecodes.Int8Byte => 8,
-            (byte)Bytecodes.UInt1Byte => 1,
-            (byte)Bytecodes.UInt2Byte => 2,
-            (byte)Bytecodes.UInt4Byte => 4,
-            (byte)Bytecodes.UInt8Byte => 8,
+            <= (byte)Bytecode.PackedUIntEnd => 0,
+            (byte)Bytecode.Int1Byte => 1,
+            (byte)Bytecode.Int2Byte => 2,
+            (byte)Bytecode.Int4Byte => 4,
+            (byte)Bytecode.Int8Byte => 8,
+            (byte)Bytecode.UInt1Byte => 1,
+            (byte)Bytecode.UInt2Byte => 2,
+            (byte)Bytecode.UInt4Byte => 4,
+            (byte)Bytecode.UInt8Byte => 8,
             _ => _spanSize
         };
     }
@@ -41,29 +41,27 @@ public struct Decoder
     {
         switch (_nextCode)
         {
-            case (byte)Bytecodes.Null:
+            case (byte)Bytecode.Null:
                 return TokenTypes.Null;
-            case (byte)Bytecodes.True:
-            case (byte)Bytecodes.False:
+            case (byte)Bytecode.True:
+            case (byte)Bytecode.False:
                 return TokenTypes.Boolean;
-            case >= (byte)Bytecodes.PackedUIntStart 
-                and <= (byte)Bytecodes.PackedUIntEnd:
+            case >= (byte)Bytecode.PackedUIntStart 
+                and <= (byte)Bytecode.PackedUIntEnd:
                 return TokenTypes.UInt1Byte;
-            case (byte)Bytecodes.Int1Byte:
-                return TokenTypes.Int1Byte;
-            case (byte)Bytecodes.Int2Byte:
+            case (byte)Bytecode.Int2Byte:
                 return TokenTypes.Int2Byte;
-            case (byte)Bytecodes.Int4Byte:
+            case (byte)Bytecode.Int4Byte:
                 return TokenTypes.Int4Byte;
-            case (byte)Bytecodes.Int8Byte:
+            case (byte)Bytecode.Int8Byte:
                 return TokenTypes.Int8Byte;
-            case (byte)Bytecodes.UInt1Byte:
+            case (byte)Bytecode.UInt1Byte:
                 return TokenTypes.UInt1Byte;
-            case (byte)Bytecodes.UInt2Byte:
+            case (byte)Bytecode.UInt2Byte:
                 return TokenTypes.UInt2Byte;
-            case (byte)Bytecodes.UInt4Byte:
+            case (byte)Bytecode.UInt4Byte:
                 return TokenTypes.UInt4Byte;
-            case (byte)Bytecodes.UInt8Byte:
+            case (byte)Bytecode.UInt8Byte:
                 return TokenTypes.UInt8Byte;
         }
 
@@ -74,8 +72,8 @@ public struct Decoder
     {
         return _nextCode switch
         {
-            (byte)Bytecodes.True => true,
-            (byte)Bytecodes.False => false,
+            (byte)Bytecode.True => true,
+            (byte)Bytecode.False => false,
             _ => DecoderException.Throw<bool>(_nextCode)
         };
     }
@@ -84,10 +82,10 @@ public struct Decoder
     {
         return _nextCode switch
         {
-            >= (byte)Bytecodes.PackedUIntStart and 
-                <= (byte)Bytecodes.PackedUIntEnd => (byte)(_nextCode -
-                (byte)Bytecodes.PackedUIntStart),
-            (byte)Bytecodes.UInt1Byte => (byte)_stream.ReadByte(),
+            >= (byte)Bytecode.PackedUIntStart and 
+                <= (byte)Bytecode.PackedUIntEnd => (byte)(_nextCode -
+                (byte)Bytecode.PackedUIntStart),
+            (byte)Bytecode.UInt1Byte => (byte)_stream.ReadByte(),
             _ => DecoderException.Throw<byte>(_nextCode)
         };
     }
@@ -96,11 +94,11 @@ public struct Decoder
     {
         switch (_nextCode)
         {
-            case >= (byte)Bytecodes.PackedUIntStart and <= (byte)Bytecodes.PackedUIntEnd:
-                return (ushort)(_nextCode - (byte)Bytecodes.PackedUIntStart);
-            case (byte)Bytecodes.UInt1Byte:
+            case >= (byte)Bytecode.PackedUIntStart and <= (byte)Bytecode.PackedUIntEnd:
+                return (ushort)(_nextCode - (byte)Bytecode.PackedUIntStart);
+            case (byte)Bytecode.UInt1Byte:
                 return (ushort)_stream.ReadByte();
-            case (byte)Bytecodes.UInt2Byte:
+            case (byte)Bytecode.UInt2Byte:
             {
                 Span<byte> buf = stackalloc byte[2];
                 _stream.Read(buf);
@@ -111,21 +109,46 @@ public struct Decoder
         }
     }
 
+    public short ReadShort()
+    {
+        switch (_nextCode)
+        {
+            case >= (byte)Bytecode.PackedUIntStart and <= (byte)Bytecode.PackedUIntEnd:
+                return (short)(_nextCode - (byte)Bytecode.PackedUIntStart);
+            case (byte)Bytecode.UInt1Byte:
+                return (short)_stream.ReadByte();
+            case (byte)Bytecode.Int2Byte:
+            {
+                Span<byte> buf = stackalloc byte[2];
+                _stream.Read(buf);
+                return BinaryPrimitives.ReadInt16LittleEndian(buf);
+            }
+            case (byte)Bytecode.UInt2Byte:
+            {
+                Span<byte> buf = stackalloc byte[2];
+                _stream.Read(buf);
+                return (short)BinaryPrimitives.ReadUInt16LittleEndian(buf);
+            }                
+            default:
+                return DecoderException.Throw<short>(_nextCode);
+        }
+    }
+
     public uint ReadUInt()
     {
         switch (_nextCode)
         {
-            case >= (byte)Bytecodes.PackedUIntStart and <= (byte)Bytecodes.PackedUIntEnd:
-                return (uint)(_nextCode - (byte)Bytecodes.PackedUIntStart);
-            case (byte)Bytecodes.UInt1Byte:
+            case >= (byte)Bytecode.PackedUIntStart and <= (byte)Bytecode.PackedUIntEnd:
+                return (uint)(_nextCode - (byte)Bytecode.PackedUIntStart);
+            case (byte)Bytecode.UInt1Byte:
                 return (uint)_stream.ReadByte();
-            case (byte)Bytecodes.UInt2Byte:
+            case (byte)Bytecode.UInt2Byte:
             {
                 Span<byte> buf = stackalloc byte[2];
                 _stream.Read(buf);
                 return BinaryPrimitives.ReadUInt16LittleEndian(buf);
             }
-            case (byte)Bytecodes.UInt4Byte:
+            case (byte)Bytecode.UInt4Byte:
             {
                 Span<byte> buf = stackalloc byte[4];
                 _stream.Read(buf);

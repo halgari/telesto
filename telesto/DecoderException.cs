@@ -4,14 +4,15 @@ namespace telesto;
 
 public class DecoderException : Exception
 {
-    public DecoderException(byte byteCode, Type type)
-    : base($"Cannot convert byte code {byteCode} to type {type.Name}.")
+    public DecoderException(byte byteCode, Type type, Bytecode? bytecodeEnum)
+    : base($"Cannot convert byte code {bytecodeEnum}({byteCode}) to type {type.Name}.")
     {
         
     }
 
     public static T Throw<T>(byte code)
     {
-        throw new DecoderException(code, typeof(T));
+        var e = code as Bytecode?;
+        throw new DecoderException(code, typeof(T), e);
     }
 }
