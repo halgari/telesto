@@ -71,16 +71,16 @@ public struct Encoder
     /// Writes an int value to the stream.
     /// </summary>
     /// <param name="value"></param>
-    public void Write(uint value)
+    public void Write(int value)
     {
-        if (value <= ushort.MaxValue)
+        if (value is > 0 and <= short.MaxValue)
         {
             Write((ushort)value);
             return;
         }
-        _stream.WriteByte((byte)Bytecode.UInt4Byte);
+        _stream.WriteByte((byte)Bytecode.Int4Byte);
         Span<byte> buffer = stackalloc byte[4];
-        BinaryPrimitives.WriteUInt32LittleEndian(buffer, value);
+        BinaryPrimitives.WriteInt32LittleEndian(buffer, value);
         _stream.Write(buffer);
     }
 

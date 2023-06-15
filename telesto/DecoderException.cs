@@ -12,7 +12,10 @@ public class DecoderException : Exception
 
     public static T Throw<T>(byte code)
     {
-        var e = code as Bytecode?;
-        throw new DecoderException(code, typeof(T), e);
+        Bytecode? result = (Bytecode)code;
+        if (Enum.IsDefined((Bytecode)code))
+            throw new DecoderException(code, typeof(T), result);
+        else
+            throw new DecoderException(code, typeof(T), null);
     }
 }
