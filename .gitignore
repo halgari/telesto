@@ -2,6 +2,7 @@
 
 ./bin
 ./obj
+./idea
 
 # User specific
 **/.idea/**/workspace.xml
