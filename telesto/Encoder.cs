@@ -117,6 +117,23 @@ public struct Encoder
         BinaryPrimitives.WriteUInt64LittleEndian(buffer, value);
         _stream.Write(buffer);
     }
+    
+    /// <summary>
+    /// Writes a long value to the stream.
+    /// </summary>
+    /// <param name="value"></param>
+    public void Write(long value)
+    {
+        if (value is >= 0 and <= int.MaxValue)
+        {
+            Write((uint)value);
+            return;
+        }
+        _stream.WriteByte((byte)Bytecode.Int8Byte);
+        Span<byte> buffer = stackalloc byte[8];
+        BinaryPrimitives.WriteInt64LittleEndian(buffer, value);
+        _stream.Write(buffer);
+    }
 
     public void Write(short value)
     {

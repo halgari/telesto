@@ -176,6 +176,45 @@ public class PrimitiveTests
         var result = decoder.ReadULong();
         result.Should().Be(value);
     }
+    
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(-1)]
+    [InlineData(Encoder.PackedIntSize - 1)]
+    [InlineData(Encoder.PackedIntSize)]
+    [InlineData(Encoder.PackedIntSize + 1)]
+    [InlineData(byte.MaxValue)]
+    [InlineData(byte.MaxValue + 1)]
+    [InlineData(int.MaxValue)]
+    [InlineData(int.MinValue)]
+    [InlineData(int.MaxValue - 1)]
+    [InlineData(long.MaxValue)]
+    [InlineData(long.MinValue)]
+    [InlineData(long.MaxValue - 1)]
+    [InlineData(-byte.MaxValue)]
+    [InlineData(-byte.MaxValue + 1)]
+    [InlineData(ushort.MaxValue + 1)]
+    [InlineData(ushort.MaxValue - 1)]
+    [InlineData(ushort.MaxValue)]
+    [InlineData(-ushort.MaxValue + 1)]
+    [InlineData(-ushort.MaxValue - 1)]
+    [InlineData(-ushort.MaxValue)]
+    public void TestLong(long value)
+    {
+        var stream = new MemoryStream();
+        var encoder = new Encoder(stream);
+        encoder.Write(value);
+        stream.Position = 0;
+        var decoder = new Decoder(stream);
+        decoder.Read();
+        decoder.GetTokenType().Should().BeOneOf(TokenTypes.UInt1Byte, 
+            TokenTypes.UInt2Byte, TokenTypes.UInt4Byte,
+            TokenTypes.Int2Byte, TokenTypes.Int4Byte,
+            TokenTypes.Int8Byte);
+        var result = decoder.ReadLong();
+        result.Should().Be(value);
+    }
 
     [Theory]
     [InlineData(0, 8, 12)]
