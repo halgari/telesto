@@ -159,6 +159,37 @@ public struct Decoder
         }
     }
     
+    public ulong ReadULong()
+    {
+        switch (_nextCode)
+        {
+            case >= (byte)Bytecode.PackedUIntStart and <= (byte)Bytecode.PackedUIntEnd:
+                return (ulong)(_nextCode - (byte)Bytecode.PackedUIntStart);
+            case (byte)Bytecode.UInt1Byte:
+                return (ulong)_stream.ReadByte();
+            case (byte)Bytecode.UInt2Byte:
+            {
+                Span<byte> buf = stackalloc byte[2];
+                _stream.Read(buf);
+                return BinaryPrimitives.ReadUInt16LittleEndian(buf);
+            }
+            case (byte)Bytecode.UInt4Byte:
+            {
+                Span<byte> buf = stackalloc byte[4];
+                _stream.Read(buf);
+                return BinaryPrimitives.ReadUInt32LittleEndian(buf);
+            }            
+            case (byte)Bytecode.UInt8Byte:
+            {
+                Span<byte> buf = stackalloc byte[8];
+                _stream.Read(buf);
+                return BinaryPrimitives.ReadUInt64LittleEndian(buf);
+            }
+            default:
+                return DecoderException.Throw<ulong>(_nextCode);
+        }
+    }
+    
     public int ReadInt()
     {
         switch (_nextCode)
