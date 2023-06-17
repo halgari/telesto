@@ -21,4 +21,13 @@ public enum Bytecode : byte
     Bytes1ByteSize = 0x14,
     Bytes2ByteSize = 0x15,
     Bytes4ByteSize = 0x16,
+    StartList1ByteLength = 0x17,
+    StartList2ByteLength = 0x18,
+    StartList4ByteLength = 0x19,
+    StartDictionary1ByteLength = 0x1A,
+    StartDictionary2ByteLength = 0x1B,
+    StartDictionary4ByteLength = 0x1C,
+    StartObject1ByteLength = 0x1D,
+    StartObject2ByteLength = 0x1E,
+    StartObject4ByteLength = 0x1F,
 }

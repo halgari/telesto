@@ -255,4 +255,27 @@ public struct Encoder
         
         _stream.Write(bytes);
     }
+
+    /// <summary>
+    /// Writes a start list marker, should be matched by a call to <see cref="WriteEndContainer"/>.
+    /// </summary>
+    public void WriteStartList(int length)
+    {
+        switch (length)
+        {
+            case <= byte.MaxValue:
+                WriteNative(Bytecode.StartList1ByteLength);
+                WriteNative((byte)length);
+                break;
+            case <= ushort.MaxValue:
+                WriteNative(Bytecode.StartList2ByteLength);
+                WriteNative((ushort)length);
+                break;
+            default:
+                WriteNative(Bytecode.StartList4ByteLength);
+                WriteNative((uint)length);
+                break;
+        }
+    }
+
 }

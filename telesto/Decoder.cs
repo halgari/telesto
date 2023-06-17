@@ -107,6 +107,9 @@ public ref struct Decoder
             (byte)Bytecode.Bytes1ByteSize => NextByte(),
             (byte)Bytecode.Bytes2ByteSize => NextUShort(),
             (byte)Bytecode.Bytes4ByteSize => NextUInt(),
+            (byte)Bytecode.StartList1ByteLength => NextByte(),
+            (byte)Bytecode.StartList2ByteLength => NextUShort(),
+            (byte)Bytecode.StartList4ByteLength => NextUInt(),
             _ => throw new NotImplementedException()
         };
     }
