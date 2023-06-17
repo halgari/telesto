@@ -54,7 +54,7 @@ public class PrimitiveBenchmarks
     public void Read_Telesto()
     {
         _telestoWrite.Position = 0;
-        var reader = new Decoder(_telestoWrite);
+        var reader = new Decoder(_telestoWrite.GetBuffer());
         var data = Data;
         foreach (var value in data)
         {

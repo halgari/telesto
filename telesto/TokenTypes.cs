@@ -11,5 +11,7 @@ public enum TokenTypes
     UInt2Byte,
     UInt4Byte,
     UInt8Byte,
-    ArrayStart,
+    String,
+    Guid,
+    ByteArray,
 }

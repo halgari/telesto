@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Text;
 using FluentAssertions;
 
 namespace telesto.Tests;
@@ -24,7 +25,7 @@ public class PrimitiveTests
         var encoder = new Encoder(stream);
         encoder.Write(value);
         stream.Position = 0;
-        var decoder = new Decoder(stream);
+        var decoder = new Decoder(stream.GetBuffer());
         decoder.Read();
         decoder.GetTokenType().Should().Be(TokenTypes.UInt1Byte);
         var result = decoder.ReadByte();
@@ -48,7 +49,7 @@ public class PrimitiveTests
         var encoder = new Encoder(stream);
         encoder.Write(value);
         stream.Position = 0;
-        var decoder = new Decoder(stream);
+        var decoder = new Decoder(stream.GetBuffer());
         decoder.Read();
         decoder.GetTokenType().Should().BeOneOf(TokenTypes.UInt1Byte, TokenTypes.UInt2Byte);
         var result = decoder.ReadUShort();
@@ -77,7 +78,7 @@ public class PrimitiveTests
         var encoder = new Encoder(stream);
         encoder.Write(value);
         stream.Position = 0;
-        var decoder = new Decoder(stream);
+        var decoder = new Decoder(stream.GetBuffer());
         decoder.Read();
         decoder.GetTokenType().Should().BeOneOf(TokenTypes.UInt1Byte, TokenTypes.UInt2Byte, TokenTypes.Int2Byte);
         var result = decoder.ReadShort();
@@ -104,7 +105,7 @@ public class PrimitiveTests
         var encoder = new Encoder(stream);
         encoder.Write(value);
         stream.Position = 0;
-        var decoder = new Decoder(stream);
+        var decoder = new Decoder(stream.GetBuffer());
         decoder.Read();
         decoder.GetTokenType().Should().BeOneOf(TokenTypes.UInt1Byte, 
             TokenTypes.UInt2Byte, TokenTypes.UInt4Byte);
@@ -138,7 +139,7 @@ public class PrimitiveTests
         var encoder = new Encoder(stream);
         encoder.Write(value);
         stream.Position = 0;
-        var decoder = new Decoder(stream);
+        var decoder = new Decoder(stream.GetBuffer());
         decoder.Read();
         decoder.GetTokenType().Should().BeOneOf(TokenTypes.UInt1Byte, 
             TokenTypes.UInt2Byte, TokenTypes.UInt4Byte,
@@ -169,7 +170,7 @@ public class PrimitiveTests
         var encoder = new Encoder(stream);
         encoder.Write(value);
         stream.Position = 0;
-        var decoder = new Decoder(stream);
+        var decoder = new Decoder(stream.GetBuffer());
         decoder.Read();
         decoder.GetTokenType().Should().BeOneOf(TokenTypes.UInt1Byte, 
             TokenTypes.UInt2Byte, TokenTypes.UInt4Byte, TokenTypes.UInt8Byte);
@@ -206,7 +207,7 @@ public class PrimitiveTests
         var encoder = new Encoder(stream);
         encoder.Write(value);
         stream.Position = 0;
-        var decoder = new Decoder(stream);
+        var decoder = new Decoder(stream.GetBuffer());
         decoder.Read();
         decoder.GetTokenType().Should().BeOneOf(TokenTypes.UInt1Byte, 
             TokenTypes.UInt2Byte, TokenTypes.UInt4Byte,
@@ -232,7 +233,7 @@ public class PrimitiveTests
 
         ms.Position.Should().Be(len);
         ms.Position = 0;
-        var decoder = new Decoder(ms);
+        var decoder = new Decoder(ms.GetBuffer());
         for (uint i = min; i < max; i++)
         {
             decoder.Read();
@@ -241,5 +242,98 @@ public class PrimitiveTests
             var result = decoder.ReadUInt();
             result.Should().Be(i);
         }
+    }
+
+    [Theory]
+    [InlineData("85D44B22-33DD-423F-AA07-B4415BABE248")]
+    [InlineData("86484847-BD0F-471D-9504-8AD3DEF2ED4D")]
+    [InlineData("00000000-0000-0000-0000-000000000000")]
+    [InlineData("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")]
+    public void TestGuids(string stringGuid)
+    {
+        var guid = Guid.Parse(stringGuid);
+        using var ms = new MemoryStream();
+        var encoder = new Encoder(ms);
+        encoder.Write(guid);
+        ms.Position = 0;
+        var decoder = new Decoder(ms.GetBuffer());
+        decoder.Read();
+        decoder.GetTokenType().Should().Be(TokenTypes.Guid);
+        var result = decoder.ReadGuid();
+        result.Should().Be(guid);
+    }
+
+    [Theory]
+    [MemberData(nameof(RandomStrings))]
+    public void TestString(string data, int length)
+    {
+        using var ms = new MemoryStream();
+        var encoder = new Encoder(ms);
+        encoder.Write(data);
+        ms.Position = 0;
+        var decoder = new Decoder(ms.GetBuffer());
+        decoder.Read();
+        decoder.GetTokenType().Should().Be(TokenTypes.String);
+        var result = decoder.ReadString();
+        result.Should().Be(data);
+    }
+    
+    [Theory]
+    [MemberData(nameof(RandomStrings))]
+    public void TestByteArray(string data, int length)
+    {
+        var bytes = Encoding.UTF8.GetBytes(data);
+        using var ms = new MemoryStream();
+        var encoder = new Encoder(ms);
+        encoder.Write(bytes);
+        ms.Position = 0;
+        var decoder = new Decoder(ms.GetBuffer());
+        decoder.Read();
+        decoder.GetTokenType().Should().Be(TokenTypes.ByteArray);
+        var outSpan = new byte[decoder.GetLength()];
+        decoder.ReadByteArray(outSpan).Should().Be((uint)bytes.Length);
+        outSpan.Should().BeEquivalentTo(bytes);
+    }
+
+    public static IEnumerable<object[]> RandomStrings()
+    {
+        var rnd = new Random(0);
+
+        var lengths = new List<int>()
+        {
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            10,
+            100,
+            1000,
+            10000,
+            100000,
+            1000000,
+            10000000
+        };
+        
+        var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".ToCharArray();
+        
+
+        List<string> items = new List<string>();
+        foreach (var length in lengths)
+        {
+            var bytes = new char[length];
+            for (var idx = 0; idx < bytes.Length; idx ++)
+            {
+                bytes[idx] = chars[rnd.Next(0, chars.Length)];
+            }
+            items.Add(new String(bytes));
+        }
+
+        return items.Select(x => new object[]
+        {
+            x, Encoding.UTF8.GetByteCount(x)
+        });
     }
 }

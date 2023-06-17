@@ -1,4 +1,7 @@
 ﻿using System.Buffers.Binary;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace telesto;
 
@@ -15,6 +18,38 @@ public struct Encoder
     {
         _stream = stream;
     }
+
+    #region Stream-like functions
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void WriteNative(Bytecode code)
+    {
+        WriteNative((byte)code);
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void WriteNative(byte value)
+    {
+        _stream.WriteByte(value);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void WriteNative(ushort value)
+    {
+        Span<byte> buffer = stackalloc byte[2];
+        BinaryPrimitives.WriteUInt16LittleEndian(buffer, value);
+        _stream.Write(buffer);
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void WriteNative(uint value)
+    {
+        Span<byte> buffer = stackalloc byte[4];
+        BinaryPrimitives.WriteUInt32LittleEndian(buffer, value);
+        _stream.Write(buffer);
+    }
+
+    #endregion
     
     /// <summary>
     /// Writes a null value to the stream.
@@ -152,5 +187,72 @@ public struct Encoder
                 _stream.Write(buffer);
                 return;
         }
+    }
+    
+    public void Write(string value)
+    {
+        Span<byte> buffer = stackalloc byte[128];
+        var encodedLength = Encoding.UTF8.GetByteCount(value);
+        
+        switch (encodedLength)
+        {
+            case <= byte.MaxValue:
+                _stream.WriteByte((byte)Bytecode.String1ByteSize);
+                _stream.WriteByte((byte)encodedLength);
+                break;
+            case <= ushort.MaxValue:
+                _stream.WriteByte((byte)Bytecode.String2ByteSize);
+                BinaryPrimitives.WriteUInt16LittleEndian(buffer, (ushort)encodedLength);
+                _stream.Write(buffer[..2]);
+                break;
+            default:
+                _stream.WriteByte((byte)Bytecode.String4ByteSize);
+                BinaryPrimitives.WriteUInt32LittleEndian(buffer, (uint)encodedLength);
+                _stream.Write(buffer[..4]);
+                break;
+        }
+        
+        var bytes = Encoding.UTF8.GetBytes(value);
+        Debug.Assert(bytes.Length == encodedLength);
+        _stream.Write(bytes);
+    }
+
+    /// <summary>
+    /// Writes a guid value to the stream.
+    /// </summary>
+    /// <param name="guid"></param>
+    public void Write(Guid guid)
+    {
+        _stream.WriteByte((byte)Bytecode.Guid);
+        Span<byte> buffer = stackalloc byte[16];
+        guid.TryWriteBytes(buffer);
+        _stream.Write(buffer);
+    }
+    
+    /// <summary>
+    /// Writes a span as a byte array to the stream.
+    /// </summary>
+    /// <param name="bytes"></param>
+    public void Write(ReadOnlySpan<byte> bytes)
+    {
+        var encodedLength = bytes.Length;
+        
+        switch (encodedLength)
+        {
+            case <= byte.MaxValue:
+                WriteNative(Bytecode.Bytes1ByteSize);
+                WriteNative((byte)encodedLength);
+                break;
+            case <= ushort.MaxValue:
+                WriteNative(Bytecode.Bytes2ByteSize);
+                WriteNative((ushort)encodedLength);
+                break;
+            default:
+                WriteNative(Bytecode.Bytes4ByteSize);
+                WriteNative((uint)encodedLength);
+                break;
+        }
+        
+        _stream.Write(bytes);
     }
 }
