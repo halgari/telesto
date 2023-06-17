@@ -110,6 +110,9 @@ public ref struct Decoder
             (byte)Bytecode.StartList1ByteLength => NextByte(),
             (byte)Bytecode.StartList2ByteLength => NextUShort(),
             (byte)Bytecode.StartList4ByteLength => NextUInt(),
+            (byte)Bytecode.StartDictionary1ByteLength => NextByte(),
+            (byte)Bytecode.StartDictionary2ByteLength => NextUShort(),
+            (byte)Bytecode.StartDictionary4ByteLength => NextUInt(),
             _ => throw new NotImplementedException()
         };
     }
@@ -151,6 +154,14 @@ public ref struct Decoder
             case (byte)Bytecode.Bytes2ByteSize:
             case (byte)Bytecode.Bytes4ByteSize:
                 return TokenTypes.ByteArray;
+            case (byte)Bytecode.StartList1ByteLength:
+            case (byte)Bytecode.StartList2ByteLength:
+            case (byte)Bytecode.StartList4ByteLength:
+                return TokenTypes.StartList;
+            case (byte)Bytecode.StartDictionary1ByteLength:
+            case (byte)Bytecode.StartDictionary2ByteLength:
+            case (byte)Bytecode.StartDictionary4ByteLength:
+                return TokenTypes.StartDictionary;
         }
 
         throw new NotImplementedException();

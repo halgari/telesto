@@ -278,4 +278,29 @@ public struct Encoder
         }
     }
 
+    
+    /// <summary>
+    /// Writes a start dictionary marker, should be matched by a call to <see cref="WriteEndContainer"/>.
+    /// Length is the number of key-value pairs in the dictionary.
+    /// </summary>
+    /// <param name="pairCount"></param>
+    public void WriteStartDictionary(int pairCount)
+    {
+        switch (pairCount)
+        {
+            case <= byte.MaxValue:
+                WriteNative(Bytecode.StartDictionary1ByteLength);
+                WriteNative((byte)pairCount);
+                break;
+            case <= ushort.MaxValue:
+                WriteNative(Bytecode.StartDictionary2ByteLength);
+                WriteNative((ushort)pairCount);
+                break;
+            default:
+                WriteNative(Bytecode.StartDictionary4ByteLength);
+                WriteNative((uint)pairCount);
+                break;
+        }
+    }
+
 }

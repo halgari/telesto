@@ -14,4 +14,7 @@ public enum TokenTypes
     String,
     Guid,
     ByteArray,
+    StartDictionary,
+    StartList,
+    StartObject,
 }
