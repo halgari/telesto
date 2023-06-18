@@ -286,13 +286,18 @@ public class PrimitiveTests
         using var ms = new MemoryStream();
         var encoder = new Encoder(ms);
         encoder.Write(bytes);
+        encoder.Write((byte)42);
         ms.Position = 0;
         var decoder = new Decoder(ms.GetBuffer());
         decoder.Read();
         decoder.GetTokenType().Should().Be(TokenTypes.ByteArray);
-        var outSpan = new byte[decoder.GetLength()];
-        decoder.ReadByteArray(outSpan).Should().Be((uint)bytes.Length);
-        outSpan.Should().BeEquivalentTo(bytes);
+        
+        decoder.ReadByteArray().Should().BeEquivalentTo(bytes);
+        
+        // To make sure we terminate the data properly
+        decoder.Read();
+        decoder.GetTokenType().Should().Be(TokenTypes.UInt1Byte);
+        decoder.ReadByte().Should().Be(42);
     }
 
     public static IEnumerable<object[]> RandomStrings()

@@ -1,3 +1,4 @@
+using System.Text;
 using FluentAssertions;
 
 namespace telesto.Tests;
@@ -60,6 +61,47 @@ public class CollectionTests
         decoder.GetTokenType().Should().Be(TokenTypes.StartDictionary);
         var count = decoder.GetLength();
         count.Should().Be((uint)items.Count);
+        foreach (var (key, value) in items)
+        {
+            decoder.Read();
+            decoder.ReadInt().Should().Be(key);
+            decoder.Read();
+            decoder.ReadString().Should().Be(value);
+        }
+    }
+    
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(byte.MaxValue)]
+    [InlineData(byte.MaxValue+1)]
+    [InlineData(ushort.MaxValue)]
+    [InlineData(ushort.MaxValue+1)]
+    public void ObjectTests(int len)
+    {
+        var items = Enumerable.Range(0, len).ToDictionary(x => x, x => x.ToString());
+        var ms = new MemoryStream();
+        var encoder = new Encoder(ms);
+        var typeTag = "SomeType"u8.ToArray();
+        encoder.WriteStartObject(typeTag, items.Count);
+        foreach (var (key, value) in items)
+        {
+            encoder.Write(key);
+            encoder.Write(value);
+        }
+        
+        ms.Position = 0;
+        var decoder = new Decoder(ms.GetBuffer());
+        decoder.Read();
+        decoder.GetTokenType().Should().Be(TokenTypes.StartObject);
+        var count = decoder.GetLength();
+        count.Should().Be((uint)items.Count);
+        decoder.Read(); 
+        decoder.GetTokenType().Should().Be(TokenTypes.ByteArray);
+        decoder.GetLength().Should().Be((uint)typeTag.Length);
+        
+        decoder.ReadByteArray().Should().BeEquivalentTo(typeTag);
+        
         foreach (var (key, value) in items)
         {
             decoder.Read();

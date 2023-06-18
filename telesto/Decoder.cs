@@ -6,14 +6,20 @@ namespace telesto;
 
 public ref struct Decoder
 {
-    private readonly ReadOnlySpan<byte> _buffer;
+    public readonly ReadOnlySpan<byte> Buffer;
     private byte _nextCode;
     private uint _spanSize;
     private int _offset;
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int GetOffset() => _offset;
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetOffset(int offset) => _offset = offset;
 
     public Decoder(ReadOnlySpan<byte> stream)
     {
-        _buffer = stream;
+        Buffer = stream;
         _offset = 0x00;
         _nextCode = 0x00;
         _spanSize = 0;
@@ -25,7 +31,7 @@ public ref struct Decoder
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private byte NextByte()
     {
-        var value = _buffer[_offset];
+        var value = Buffer[_offset];
         _offset++;
         return value;
     }
@@ -33,7 +39,7 @@ public ref struct Decoder
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private ushort NextUShort()
     {
-        var value = BinaryPrimitives.ReadUInt16LittleEndian(_buffer[_offset..]);
+        var value = BinaryPrimitives.ReadUInt16LittleEndian(Buffer[_offset..]);
         _offset += 2;
         return value;
     }
@@ -41,7 +47,7 @@ public ref struct Decoder
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private uint NextUInt()
     {
-        var value = BinaryPrimitives.ReadUInt32LittleEndian(_buffer[_offset..]);
+        var value = BinaryPrimitives.ReadUInt32LittleEndian(Buffer[_offset..]);
         _offset += 4;
         return value;
     }
@@ -49,7 +55,7 @@ public ref struct Decoder
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private ulong NextULong()
     {
-        var value = BinaryPrimitives.ReadUInt64LittleEndian(_buffer[_offset..]);
+        var value = BinaryPrimitives.ReadUInt64LittleEndian(Buffer[_offset..]);
         _offset += 8;
         return value;
     }
@@ -57,7 +63,7 @@ public ref struct Decoder
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private short NextShort()
     {
-        var value = BinaryPrimitives.ReadInt16LittleEndian(_buffer[_offset..]);
+        var value = BinaryPrimitives.ReadInt16LittleEndian(Buffer[_offset..]);
         _offset += 2;
         return value;
     }
@@ -65,7 +71,7 @@ public ref struct Decoder
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int NextInt()
     {
-        var value = BinaryPrimitives.ReadInt32LittleEndian(_buffer[_offset..]);
+        var value = BinaryPrimitives.ReadInt32LittleEndian(Buffer[_offset..]);
         _offset += 4;
         return value;
     }
@@ -73,7 +79,7 @@ public ref struct Decoder
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private long NextLong()
     {
-        var value = BinaryPrimitives.ReadInt64LittleEndian(_buffer[_offset..]);
+        var value = BinaryPrimitives.ReadInt64LittleEndian(Buffer[_offset..]);
         _offset += 8;
         return value;
     }
@@ -113,7 +119,10 @@ public ref struct Decoder
             (byte)Bytecode.StartDictionary1ByteLength => NextByte(),
             (byte)Bytecode.StartDictionary2ByteLength => NextUShort(),
             (byte)Bytecode.StartDictionary4ByteLength => NextUInt(),
-            _ => throw new NotImplementedException()
+            (byte)Bytecode.StartObject1ByteLength => NextByte(),
+            (byte)Bytecode.StartObject2ByteLength => NextUShort(),
+            (byte)Bytecode.StartObject4ByteLength => NextUInt(),
+            _ => throw new NotImplementedException($"Unknown byte code {_nextCode:X}")
         };
     }
 
@@ -162,9 +171,24 @@ public ref struct Decoder
             case (byte)Bytecode.StartDictionary2ByteLength:
             case (byte)Bytecode.StartDictionary4ByteLength:
                 return TokenTypes.StartDictionary;
+            case (byte)Bytecode.StartObject1ByteLength:
+            case (byte)Bytecode.StartObject2ByteLength:
+            case (byte)Bytecode.StartObject4ByteLength:
+                return TokenTypes.StartObject;
         }
 
         throw new NotImplementedException();
+    }
+    
+    /// <summary>
+    /// Returns the current token data as a span, really only useful for
+    /// byte arrays and strings.
+    /// </summary>
+    /// <returns></returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ReadOnlySpan<byte> ValueSpan()
+    {
+        return Buffer[_offset..(_offset + (int)_spanSize)];
     }
 
     /// <summary>
@@ -292,21 +316,11 @@ public ref struct Decoder
     public string ReadString()
     {
 
-        var str = Encoding.UTF8.GetString(_buffer[_offset..(_offset + (int)_spanSize)]);
+        var str = Encoding.UTF8.GetString(Buffer[_offset..(_offset + (int)_spanSize)]);
         _offset += (int)_spanSize;
         return str;
     }
     
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public uint ReadByteArray(Span<byte> data)
-    {
-        var bytes = _buffer[_offset..(_offset + (int)_spanSize)];
-        _offset += (int)_spanSize;
-        bytes.CopyTo(data);
-        return _spanSize;
-    }
-    
-
     /// <summary>
     /// Reads a guid
     /// </summary>
@@ -317,9 +331,24 @@ public ref struct Decoder
         if (_nextCode != (byte)Bytecode.Guid)
             return DecoderException.Throw<Guid>(_nextCode);
         
-        var guid = new Guid(_buffer[_offset..(_offset + 16)]);
+        var guid = new Guid(Buffer[_offset..(_offset + 16)]);
         _offset += 16;
         return guid;
+    }
+    
+    /// <summary>
+    /// Reads the current value as a byte array
+    /// </summary>
+    /// <returns></returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public byte[] ReadByteArray()
+    {
+        if (GetTokenType() != TokenTypes.ByteArray)
+            return DecoderException.Throw<byte[]>(_nextCode);
+        
+        var data = ValueSpan().ToArray();
+        _offset += (int)_spanSize;
+        return data;
     }
     
 }

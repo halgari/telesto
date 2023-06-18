@@ -302,5 +302,25 @@ public struct Encoder
                 break;
         }
     }
+    
+    public void WriteStartObject(ReadOnlySpan<byte> type, int memberCount)
+    {
+        switch (memberCount)
+        {
+            case <= byte.MaxValue:
+                WriteNative(Bytecode.StartObject1ByteLength);
+                WriteNative((byte)memberCount);
+                break;
+            case <= ushort.MaxValue:
+                WriteNative(Bytecode.StartObject2ByteLength);
+                WriteNative((ushort)memberCount);
+                break;
+            default:
+                WriteNative(Bytecode.StartObject4ByteLength);
+                WriteNative((uint)memberCount);
+                break;
+        }
+        Write(type);
+    }
 
 }
